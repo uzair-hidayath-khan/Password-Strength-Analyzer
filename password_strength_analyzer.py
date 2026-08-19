@@ -5,8 +5,9 @@ password strength and generating cryptographically secure passwords.
 
 Features:
 - Password strength analysis using zxcvbn
+- Banned password detection
+- Common/weak password detection
 - Password complexity validation
-- Common and banned password detection
 - Cryptographically secure password generation
 - Password improvement recommendations
 - JSON export without storing plaintext passwords
@@ -34,17 +35,6 @@ from zxcvbn import zxcvbn
 
 
 # ============================================================================
-# LOGGING
-# ============================================================================
-
-logging.basicConfig(
-    filename="password_checker.log",
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s"
-)
-
-
-# ============================================================================
 # CYBERSECURITY THEME
 # ============================================================================
 
@@ -65,6 +55,17 @@ LIGHT_GRAY = "#B8C2CC"
 GRAY = "#687482"
 
 BORDER = "#1E2936"
+
+
+# ============================================================================
+# LOGGING
+# ============================================================================
+
+logging.basicConfig(
+    filename="password_checker.log",
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
 
 
 # ============================================================================
@@ -92,6 +93,7 @@ class Wordlist:
                 "r",
                 encoding="utf-8"
             ) as file:
+
                 wordlist = {
                     line.strip().lower()
                     for line in file
@@ -99,20 +101,23 @@ class Wordlist:
                 }
 
             self._cache[self.file_path] = wordlist
+
             return wordlist
 
         except FileNotFoundError as error:
+
             raise FileNotFoundError(
                 f"Wordlist file '{self.file_path}' was not found."
             ) from error
 
         except OSError as error:
+
             raise RuntimeError(
                 f"Unable to read wordlist '{self.file_path}': {error}"
             ) from error
 
     def is_word_in_list(self, word):
-        """Check whether a word exists in the wordlist."""
+        """Check whether a password exists in the wordlist."""
 
         return word.lower() in self.words
 
@@ -177,20 +182,55 @@ class PasswordStrength:
         )
 
     # ------------------------------------------------------------------------
-    # PASSWORD ANALYSIS
+    # PASSWORD STRENGTH ANALYSIS
     # ------------------------------------------------------------------------
 
     def check_password_strength(self, password):
-        """Evaluate the strength of a password."""
+        """Evaluate the strength of a password.
+
+        Banned passwords always take priority over weak passwords.
+        """
 
         if not password:
+
             return StrengthResult(
                 "Invalid",
                 0,
                 "Password cannot be empty."
             )
 
-        # Length check
+        # ====================================================================
+        # 1. BANNED PASSWORD CHECK
+        # ====================================================================
+        # This check intentionally happens FIRST.
+        #
+        # If a password appears in banned_passwords.txt, it will ALWAYS
+        # be classified as BANNED, even if it also appears in
+        # weak_passwords.txt or is shorter than the recommended length.
+        # ====================================================================
+
+        if (
+            self.banned_wordlist
+            and self.banned_wordlist.is_word_in_list(password)
+        ):
+
+            return StrengthResult(
+                "Banned",
+                0,
+                (
+                    "This password is banned because it is commonly "
+                    "associated with compromised or leaked credentials."
+                ),
+                [
+                    "Choose a completely different password.",
+                    "Do not use passwords that have appeared in data breaches."
+                ]
+            )
+
+        # ====================================================================
+        # 2. MINIMUM LENGTH CHECK
+        # ====================================================================
+
         if len(password) < self.min_password_length:
 
             return StrengthResult(
@@ -208,26 +248,10 @@ class PasswordStrength:
                 ]
             )
 
-        # Banned password check
-        if (
-            self.banned_wordlist
-            and self.banned_wordlist.is_word_in_list(password)
-        ):
+        # ====================================================================
+        # 3. WEAK PASSWORD CHECK
+        # ====================================================================
 
-            return StrengthResult(
-                "Banned",
-                0,
-                (
-                    "This password is not allowed because it is "
-                    "commonly found in password breach databases."
-                ),
-                [
-                    "Choose a completely different password.",
-                    "Avoid passwords that have appeared in data breaches."
-                ]
-            )
-
-        # Weak/common password check
         if (
             self.weak_wordlist
             and self.weak_wordlist.is_word_in_list(password)
@@ -243,7 +267,10 @@ class PasswordStrength:
                 ]
             )
 
-        # zxcvbn
+        # ====================================================================
+        # 4. ZXCVBN ANALYSIS
+        # ====================================================================
+
         password_strength = zxcvbn(password)
 
         score = password_strength["score"]
@@ -253,7 +280,10 @@ class PasswordStrength:
             "Unknown"
         )
 
-        # Complexity checks
+        # ====================================================================
+        # 5. CHARACTER COMPLEXITY CHECK
+        # ====================================================================
+
         complexity_issues = []
 
         if not re.search(r"[A-Z]", password):
@@ -270,6 +300,10 @@ class PasswordStrength:
             password
         ):
             complexity_issues.append("special characters")
+
+        # ====================================================================
+        # 6. ZXCVBN FEEDBACK
+        # ====================================================================
 
         feedback = password_strength.get(
             "feedback",
@@ -304,6 +338,10 @@ class PasswordStrength:
                 suggestions
             )
 
+        # ====================================================================
+        # 7. STRONG PASSWORD
+        # ====================================================================
+
         if score >= 3:
 
             return StrengthResult(
@@ -315,6 +353,10 @@ class PasswordStrength:
                 ),
                 suggestions
             )
+
+        # ====================================================================
+        # 8. MODERATE / WEAK ZXCVBN RESULT
+        # ====================================================================
 
         return StrengthResult(
             strength,
@@ -337,34 +379,60 @@ class PasswordStrength:
 
         suggestions = []
 
-        if len(password) < self.min_password_length:
+        # Banned password
+        if result.strength == "Banned":
 
-            suggestions.append(
-                f"Increase length to at least "
-                f"{self.min_password_length} characters."
+            suggestions.extend(
+                [
+                    "Do not use this password.",
+                    "Choose a completely different password.",
+                    "Use a unique password that has not appeared in breaches."
+                ]
             )
 
-        if not re.search(r"[A-Z]", password):
-            suggestions.append("Add uppercase letters.")
+        else:
 
-        if not re.search(r"[a-z]", password):
-            suggestions.append("Add lowercase letters.")
+            if len(password) < self.min_password_length:
 
-        if not re.search(r"\d", password):
-            suggestions.append("Add numbers.")
+                suggestions.append(
+                    f"Increase length to at least "
+                    f"{self.min_password_length} characters."
+                )
 
-        if not re.search(
-            r"""[!@#$%^&*(),.?":{}|<>\[\]_\-+=~`'/\\;]""",
-            password
-        ):
-            suggestions.append("Add special characters.")
+            if not re.search(r"[A-Z]", password):
+                suggestions.append(
+                    "Add uppercase letters."
+                )
 
+            if not re.search(r"[a-z]", password):
+                suggestions.append(
+                    "Add lowercase letters."
+                )
+
+            if not re.search(r"\d", password):
+                suggestions.append(
+                    "Add numbers."
+                )
+
+            if not re.search(
+                r"""[!@#$%^&*(),.?":{}|<>\[\]_\-+=~`'/\\;]""",
+                password
+            ):
+                suggestions.append(
+                    "Add special characters."
+                )
+
+        # Add zxcvbn recommendations
         for suggestion in result.suggestions:
 
             if suggestion and suggestion not in suggestions:
-                suggestions.append(suggestion)
+
+                suggestions.append(
+                    suggestion
+                )
 
         if not suggestions:
+
             return "No major improvements required."
 
         return (
@@ -380,7 +448,14 @@ class PasswordStrength:
     # ------------------------------------------------------------------------
 
     def generate_random_password(self, length=16):
-        """Generate a cryptographically secure random password."""
+        """Generate a cryptographically secure random password.
+
+        The generated password contains at least:
+        - One uppercase letter
+        - One lowercase letter
+        - One number
+        - One special character
+        """
 
         if length < 12:
 
@@ -393,6 +468,7 @@ class PasswordStrength:
         digits = string.digits
         special = self.special_characters
 
+        # Guarantee each required character category.
         password_characters = [
 
             secrets.choice(uppercase),
@@ -408,13 +484,14 @@ class PasswordStrength:
             + special
         )
 
+        # Fill remaining positions.
         for _ in range(length - 4):
 
             password_characters.append(
                 secrets.choice(all_characters)
             )
 
-        # Secure Fisher-Yates shuffle
+        # Cryptographically secure Fisher-Yates shuffle.
         for index in range(
             len(password_characters) - 1,
             0,
@@ -478,9 +555,9 @@ class PasswordStrengthGUI:
 
     def setup_gui(self):
 
-        # ================================================================
+        # ====================================================================
         # HEADER
-        # ================================================================
+        # ====================================================================
 
         header = tk.Frame(
             self.master,
@@ -540,9 +617,9 @@ class PasswordStrengthGUI:
             pady=(3, 0)
         )
 
-        # ================================================================
-        # TOP STATUS BAR
-        # ================================================================
+        # ====================================================================
+        # STATUS BAR
+        # ====================================================================
 
         status_bar = tk.Frame(
             self.master,
@@ -584,9 +661,9 @@ class PasswordStrengthGUI:
             padx=15
         )
 
-        # ================================================================
+        # ====================================================================
         # MAIN CONTENT
-        # ================================================================
+        # ====================================================================
 
         main_frame = tk.Frame(
             self.master,
@@ -599,9 +676,9 @@ class PasswordStrengthGUI:
             padx=30
         )
 
-        # ================================================================
+        # ====================================================================
         # LEFT PANEL
-        # ================================================================
+        # ====================================================================
 
         left_panel = tk.Frame(
             main_frame,
@@ -710,7 +787,9 @@ class PasswordStrengthGUI:
             lambda event: self.check_password()
         )
 
-        # Analyze button
+        # ====================================================================
+        # ANALYZE BUTTON
+        # ====================================================================
 
         self.check_button = tk.Button(
             left_panel,
@@ -733,9 +812,9 @@ class PasswordStrengthGUI:
             pady=12
         )
 
-        # ================================================================
+        # ====================================================================
         # STRENGTH DISPLAY
-        # ================================================================
+        # ====================================================================
 
         strength_title = tk.Label(
             left_panel,
@@ -764,7 +843,6 @@ class PasswordStrengthGUI:
         )
 
         # Strength meter
-
         meter_frame = tk.Frame(
             left_panel,
             bg=PANEL_DARK,
@@ -781,14 +859,14 @@ class PasswordStrengthGUI:
 
         self.meter_fill = tk.Frame(
             meter_frame,
-            bg=GRAY,
-            width=0
+            bg=GRAY
         )
 
         self.meter_fill.place(
             x=0,
             y=0,
-            relheight=1
+            relheight=1,
+            relwidth=0
         )
 
         self.score_label = tk.Label(
@@ -804,7 +882,6 @@ class PasswordStrengthGUI:
         )
 
         # Result box
-
         self.result_text = tk.Label(
             left_panel,
             text="Enter a password to begin analysis.",
@@ -824,7 +901,6 @@ class PasswordStrengthGUI:
         )
 
         # Suggestions
-
         self.suggestion_text = tk.Label(
             left_panel,
             text="",
@@ -841,9 +917,9 @@ class PasswordStrengthGUI:
             pady=(8, 15)
         )
 
-        # ================================================================
+        # ====================================================================
         # RIGHT PANEL
-        # ================================================================
+        # ====================================================================
 
         right_panel = tk.Frame(
             main_frame,
@@ -976,9 +1052,9 @@ class PasswordStrengthGUI:
             pady=8
         )
 
-        # ================================================================
+        # ====================================================================
         # SECURITY TIPS
-        # ================================================================
+        # ====================================================================
 
         tips_title = tk.Label(
             right_panel,
@@ -1020,9 +1096,9 @@ class PasswordStrengthGUI:
             padx=20
         )
 
-        # ================================================================
-        # EXPORT BUTTON
-        # ================================================================
+        # ====================================================================
+        # EXPORT
+        # ====================================================================
 
         self.export_button = tk.Button(
             right_panel,
@@ -1043,9 +1119,9 @@ class PasswordStrengthGUI:
             pady=(15, 5)
         )
 
-        # ================================================================
-        # QUIT
-        # ================================================================
+        # ====================================================================
+        # EXIT
+        # ====================================================================
 
         self.quit_button = tk.Button(
             right_panel,
@@ -1066,9 +1142,9 @@ class PasswordStrengthGUI:
             pady=5
         )
 
-        # ================================================================
+        # ====================================================================
         # FOOTER
-        # ================================================================
+        # ====================================================================
 
         footer = tk.Frame(
             self.master,
@@ -1112,7 +1188,9 @@ class PasswordStrengthGUI:
     def toggle_password_visibility(self):
         """Toggle password visibility."""
 
-        self.password_visible = not self.password_visible
+        self.password_visible = (
+            not self.password_visible
+        )
 
         if self.password_visible:
 
@@ -1161,16 +1239,24 @@ class PasswordStrengthGUI:
             GRAY
         )
 
-        # Score-based width
         if score <= 0:
+
             width = 0
+
         elif score == 1:
+
             width = 25
+
         elif score == 2:
+
             width = 50
+
         elif score == 3:
+
             width = 75
+
         else:
+
             width = 100
 
         self.meter_fill.config(
@@ -1213,9 +1299,8 @@ class PasswordStrengthGUI:
             return
 
         result = (
-            self.password_strength.check_password_strength(
-                password
-            )
+            self.password_strength
+            .check_password_strength(password)
         )
 
         self.update_strength_meter(
@@ -1231,9 +1316,8 @@ class PasswordStrengthGUI:
         )
 
         suggestions = (
-            self.password_strength.suggest_improvements(
-                password
-            )
+            self.password_strength
+            .suggest_improvements(password)
         )
 
         self.suggestion_text.config(
@@ -1261,7 +1345,7 @@ class PasswordStrengthGUI:
     # ------------------------------------------------------------------------
 
     def generate_password(self):
-        """Generate a secure password."""
+        """Generate a cryptographically secure password."""
 
         try:
 
@@ -1303,7 +1387,7 @@ class PasswordStrengthGUI:
             "Secure password generated."
         )
 
-        # Analyze generated password
+        # Analyse generated password.
         result = (
             self.password_strength
             .check_password_strength(password)
@@ -1316,7 +1400,7 @@ class PasswordStrengthGUI:
 
         self.result_text.config(
             text=(
-                f"GENERATED PASSWORD STATUS\n\n"
+                "GENERATED PASSWORD STATUS\n\n"
                 f"{result.strength}\n"
                 f"Score: {result.score}/4\n\n"
                 f"{result.message}"
@@ -1371,7 +1455,7 @@ class PasswordStrengthGUI:
         )
 
     # ------------------------------------------------------------------------
-    # EXPORT
+    # EXPORT RESULTS
     # ------------------------------------------------------------------------
 
     def export_results(self):
@@ -1439,7 +1523,7 @@ class PasswordStrengthGUI:
 # ============================================================================
 
 class PasswordStrengthCLI:
-    """Command-line interface."""
+    """Command-line interface for the password analyzer."""
 
     def __init__(self):
 
@@ -1448,7 +1532,7 @@ class PasswordStrengthCLI:
         )
 
     def check_password(self, password):
-        """Analyse a password from the CLI."""
+        """Analyse and display password strength."""
 
         result = (
             self.password_strength
@@ -1480,7 +1564,7 @@ class PasswordStrengthCLI:
         print("=" * 55)
 
     def generate_password(self, length=16):
-        """Generate a secure password from the CLI."""
+        """Generate and display a secure password."""
 
         try:
 
@@ -1517,7 +1601,7 @@ class PasswordStrengthCLI:
 
 
 # ============================================================================
-# MAIN
+# MAIN APPLICATION
 # ============================================================================
 
 def main():
@@ -1572,18 +1656,21 @@ def main():
 
         cli = PasswordStrengthCLI()
 
+        # Direct password check
         if args.check is not None:
 
             cli.check_password(
                 args.check
             )
 
+        # Direct password generation
         elif args.generate:
 
             cli.generate_password(
                 args.length
             )
 
+        # Interactive CLI
         elif args.cli:
 
             while True:
@@ -1672,7 +1759,7 @@ def main():
 
 
 # ============================================================================
-# ENTRY POINT
+# PROGRAM ENTRY POINT
 # ============================================================================
 
 if __name__ == "__main__":

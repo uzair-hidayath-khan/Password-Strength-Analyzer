@@ -1,49 +1,74 @@
-# Byte-compiled files
+# ============================================================
+# Python Byte-Compiled Files
+# ============================================================
+
 __pycache__/
 *.py[cod]
 *.pyo
 
-# Log files
+
+# ============================================================
+# Log Files
+# ============================================================
+
 *.log
 
-# Virtual environment
-venv/
-.env/
-.venv/
 
-# Python egg files
+# ============================================================
+# Virtual Environments
+# ============================================================
+
+venv/
+.venv/
+.env/
+
+
+# ============================================================
+# Python Packaging / Build Files
+# ============================================================
+
 *.egg
 *.egg-info/
 dist/
 build/
 *.wheel
 
+
+# ============================================================
 # PyInstaller
-#  Usually these files are written by a python script from a PyInstaller setup
+# ============================================================
+
 *.manifest
 *.spec
 
-# Unit test / coverage reports
+
+# ============================================================
+# Unit Testing / Coverage Reports
+# ============================================================
+
 coverage/
 *.cover
+*.coverage
 *.coverage.*
-.cache
+.cache/
 nosetests.xml
 coverage.xml
 *.coveragerc
 
-# Editor and IDE files
+
+# ============================================================
+# Editor / IDE Files
+# ============================================================
+
 .vscode/
 .idea/
 *.swp
 *.swo
 
-# Operating system files
+
+# ============================================================
+# Operating System Files
+# ============================================================
+
 .DS_Store
 Thumbs.db
-
-# Application files
-password_checker.log
-
-# Workflow files (if unnecessary to version control)
-.github/workflows/*.yml
