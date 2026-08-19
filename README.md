@@ -1,58 +1,173 @@
-Password Strength Analyzer
+🔐 Password Strength Analyzer
 
-A comprehensive password security assessment tool featuring both Graphical User Interface (GUI) and Command-Line Interface (CLI) modes. The application evaluates password strength using advanced password analysis techniques, identifies potential security weaknesses, provides recommendations for improvement, and enables users to generate strong, secure passwords.
+A cybersecurity-focused password security assessment tool with both Graphical User Interface (GUI) and Command-Line Interface (CLI) support.
+
+The application evaluates password strength using a combination of rule-based security checks and the zxcvbn password-strength estimation library. It identifies common and prohibited passwords, detects password weaknesses, provides actionable recommendations, and generates cryptographically secure passwords.
+
+The project was developed to demonstrate practical concepts in password security, secure random generation, basic cryptography, input validation, and cybersecurity best practices.
 
 Features
-Dual Interface Support: Provides both an intuitive GUI for ease of use and a lightweight CLI for efficient command-line operation.
-Advanced Password Strength Analysis: Utilises the zxcvbn password-strength estimation library to provide realistic assessments based on password patterns and predictability.
-Secure Password Generation: Generates strong, random passwords with configurable lengths.
+🖥️ Dual Interface
+1) User-friendly graphical interface built with Tkinter
+2) Lightweight command-line interface for terminal-based usage
+3) Interactive password analysis and secure password generation
 
-Comprehensive Security Checks:
-Minimum password length validation
-Uppercase and lowercase character verification
-Numeric character validation
-Special character verification
-Detection of commonly used passwords
-Detection of prohibited or banned passwords
+🔍 Advanced Password Strength Analysis
+Uses the zxcvbn password-strength estimation library to evaluate:
+1) Password predictability
+2) Common patterns
+3) Estimated password strength
+4) Overall security score from 0–4
 
-Actionable Recommendations: Provides targeted suggestions to help users improve weak or vulnerable passwords.
-Result Export: Allows password analysis results to be exported in JSON format through the GUI.
-Activity Logging: Maintains detailed logs of password analysis activities and results.
+🚫 Banned Password Detection
+Passwords are checked against banned_passwords.txt.
+Banned passwords always take priority over weak-password classification.
+If a password appears in the banned wordlist, it is immediately classified as:
 
-Installation
+Banned
+
+This prevents compromised or explicitly prohibited passwords from being incorrectly classified as merely "Weak."
+
+⚠️ Weak Password Detection
+The application checks passwords against weak_passwords.txt to identify commonly used or easily guessable passwords.
+
+🔐 Password Complexity Analysis
+The application checks for:
+
+1) Minimum password length
+2) Uppercase letters
+3) Lowercase letters
+4) Numbers
+5) Special characters
+
+The recommended minimum password length is 12 characters.
+
+⚡ Secure Password Generation
+Generates strong passwords using Python's built-in secrets module rather than the standard random module.
+
+Generated passwords:
+
+1) Are at least 12 characters long
+2) Contain uppercase letters
+3) Contain lowercase letters
+4) Contain numbers
+5) Contain special characters
+6) Use cryptographically secure random selection
+
+💡 Password Improvement Recommendations
+Provides actionable recommendations based on the detected weaknesses in a password.
+
+Examples include:
+
+Increasing password length
+Adding uppercase characters
+Adding lowercase characters
+Adding numbers
+Adding special characters
+Avoiding predictable patterns
+Avoiding commonly used passwords
+
+📋 Clipboard Support
+Generated passwords can be copied directly to the system clipboard through the GUI.
+
+📊 Result Export
+Password analysis results can be exported to a JSON file.
+For security reasons, plaintext passwords are never included in exported results.
+
+📝 Security Logging
+The application maintains an activity log containing non-sensitive information such as:
+
+1) Timestamp
+2) Operation performed
+3) Password strength result
+
+Passwords themselves are never written to the log.
+
+🛠️ Technologies Used
+Technology	Purpose
+1) Python 3	Core application development
+2) Tkinter	Graphical User Interface
+3) zxcvbn	Password strength estimation
+4) secrets	Cryptographically secure password generation
+5) re	Password complexity validation
+6) JSON	Result export
+7) logging	Application activity logging
+8) Git & GitHub	Version control and project hosting
+
+📁 Project Structure
+Password-Strength-Analyzer/
+│
+├── password_strength_analyzer.py
+├── weak_passwords.txt
+├── banned_passwords.txt
+├── screenshots
+├── LICENSE
+├── README.md
+└── password_checker.log
+
+password_checker.log is generated automatically when the application is used and should not be committed to the repository.
+
+🚀 Installation
 1. Clone the Repository
-git clone https://github.com/yourusername/password-strength-analyzer.git
-cd password-strength-analyzer
-2. Install Required Dependencies
-pip install zxcvbn
-3. Configure Required Wordlists
+git clone https://github.com/uzair-hidayath-khan/Password-Strength-Analyzer.git
 
-Ensure that the following wordlist files are available in the project directory:
+Navigate into the project directory:
+cd Password-Strength-Analyzer
 
-weak_passwords.txt — Contains a collection of commonly used and weak passwords.
-banned_passwords.txt — Contains passwords that are explicitly prohibited from use.
+2. Install Dependencies
+Install the required Python package:
+python -m pip install zxcvbn
 
-Usage
+3. Verify the Wordlists
+Ensure the following files are present in the project directory:
+weak_passwords.txt
+banned_passwords.txt
 
-GUI Mode
-Launch the application without any command-line arguments to open the graphical interface:
+The banned-password list takes priority over the weak-password list during analysis.
 
+▶️ Usage
+
+🖥️ GUI Mode
+Run the application without any command-line arguments:
 python password_strength_analyzer.py
 
-The GUI provides an interactive environment for analysing passwords, generating secure passwords, viewing security recommendations, and exporting results.
+The graphical interface provides:
 
-CLI Mode
-1. Interactive CLI
+Password analysis
+Password visibility toggle
+Visual strength meter
+Security score
+Password recommendations
+Secure password generation
+Clipboard support
+JSON result export
+Cybersecurity-focused security tips
+
+💻 CLI Mode
+Interactive CLI
 
 Launch the interactive command-line interface:
 
 python password_strength_analyzer.py --cli
-2. Analyse a Specific Password
 
-Check the strength of a password directly from the command line:
+You will be presented with:
 
+1. Check Password Strength
+2. Generate Secure Password
+3. Exit
+Check a Specific Password
 python password_strength_analyzer.py --check "your_password_here"
-3. Generate a Secure Password
+
+The application returns:
+
+Password strength
+Score out of 4
+Security analysis
+Improvement recommendations
+
+Use test passwords when experimenting with command-line arguments. Avoid entering passwords that you currently use for real accounts.
+
+Generate a Secure Password
 
 Generate a password using the default length of 16 characters:
 
@@ -61,86 +176,78 @@ python password_strength_analyzer.py --generate
 Generate a password with a custom length:
 
 python password_strength_analyzer.py --generate --length 20
-Command-Line Arguments
+
+The minimum supported generated password length is 12 characters.
+
+⚙️ Command-Line Arguments
 Argument	Description
 --cli	Launches the interactive command-line interface
 --check PASSWORD	Analyses the strength of the specified password
---generate	Generates a secure random password
---length N	Sets the length of the generated password. Default: 16
+--generate	Generates a cryptographically secure password
+--length N	Specifies the generated password length. Default: 16
 
-Password Security Analysis
+🔐 Secure Password Generation
+Password generation uses Python's built-in secrets module.
+Unlike the standard random module, secrets is specifically designed for generating values suitable for security-sensitive applications.
 
-The application evaluates passwords against multiple security criteria.
+Every generated password contains at least:
 
-Strength Requirements
-Minimum recommended length of 12 characters
-Presence of uppercase letters
-Presence of lowercase letters
-Presence of numerical characters
-Presence of special characters
-Detection of commonly used weak passwords
-Detection of banned passwords
-Advanced password-pattern analysis using zxcvbn
+1 uppercase letter
+1 lowercase letter
+1 number
+1 special character
 
-The combination of rule-based validation and zxcvbn analysis allows the application to assess not only password complexity but also common patterns and predictability.
+The remaining characters are selected using cryptographically secure randomness.
 
-GUI Capabilities
+🛡️ Security & Privacy
+Security and privacy are important design considerations of this project.
 
-The graphical interface provides the following functionality:
+Local Processing
 
-Visual representation of password strength
-Interactive password analysis
-Secure password generation
-Clipboard support for generated passwords
-Export of analysis results in JSON format
-Security recommendations and password-strength tips
-Interactive feedback based on password characteristics
-CLI Capabilities
+1) Password analysis is performed locally on the user's computer.
+2) No password is transmitted to an external API or online service.
+3) No Plaintext Password Storage
+4) The application does not permanently store plaintext passwords.
+5) No Password Logging
+6) Application logs contain only non-sensitive information.
 
-The command-line interface provides a lightweight alternative for users who prefer terminal-based tools.
+For example:
 
-Available functionality includes:
+2026-08-19 20:15:42 - INFO - Password checked: Strong
 
-Interactive password analysis
-Direct password-strength assessment
-Secure password generation
-Custom password-length configuration
-Detailed analysis results and recommendations
-Logging
+The password itself is never logged.
 
-Password analysis activities are recorded in:
+7) Secure Random Generation
+Generated passwords use the Python secrets module for cryptographically secure random selection.
+8) Banned Password Priority
+If a password appears in banned_passwords.txt, it is classified as Banned before other password-strength checks are performed.
 
-password_analyzer.log
 
-The log records relevant non-sensitive information such as:
+📋 Logging
+Application activity is recorded in:
+password_checker.log
 
-Timestamp of the operation
-Type of action performed
-Result of the strength assessment
+The log contains non-sensitive information including:
 
-Note: The application does not permanently store users' plaintext passwords.
+1) Timestamp
+2) Operation performed
+3) Password strength result
 
-Security Considerations
 
-The application is designed with basic security and privacy principles in mind:
-
-Passwords are processed locally.
-Passwords are not permanently stored.
-No external APIs are required for password-strength analysis.
-Password generation uses secure randomisation techniques.
-Analysis results can be exported without requiring an external service.
-
-Users should avoid sharing real passwords when testing applications or tools, particularly passwords that are currently used for personal or professional accounts.
-
-Requirements
+📦 Requirements
 Python 3.x
-Tkinter — included with most standard Python installations
-zxcvbn — password-strength estimation library
+Tkinter
+zxcvbn
 
-Install the primary Python dependency with:
-pip install zxcvbn
+Tkinter is included with most standard Python installations.
 
-License
+⚠️ Responsible Use
+This project is intended for educational, cybersecurity training, and password-security assessment purposes.
+Do not use real passwords belonging to yourself or others when testing or demonstrating the application.
+For testing purposes, use deliberately created test passwords.
+
+📄 License
 
 This project is licensed under the GNU General Public License v3.0 (GPL-3.0).
+
 See the LICENSE file for the complete license terms.
