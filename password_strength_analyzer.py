@@ -1,17 +1,23 @@
 """Password Strength Analyzer.
 
-A GUI and CLI application for evaluating password strength and
-generating cryptographically secure passwords.
+A cybersecurity-themed GUI and CLI application for evaluating
+password strength and generating cryptographically secure passwords.
 
 Features:
 - Password strength analysis using zxcvbn
 - Password complexity validation
 - Common and banned password detection
-- Secure password generation using the secrets module
-- Improvement recommendations
+- Cryptographically secure password generation
+- Password improvement recommendations
 - JSON export without storing plaintext passwords
 - Activity logging without recording passwords
-- GUI and CLI interfaces
+- Cybersecurity-themed GUI
+- CLI interface
+
+Dependencies:
+- Python 3.x
+- tkinter
+- zxcvbn
 """
 
 import argparse
@@ -27,9 +33,9 @@ from tkinter import filedialog, messagebox
 from zxcvbn import zxcvbn
 
 
-# ---------------------------------------------------------------------------
-# Logging Configuration
-# ---------------------------------------------------------------------------
+# ============================================================================
+# LOGGING
+# ============================================================================
 
 logging.basicConfig(
     filename="password_checker.log",
@@ -38,9 +44,32 @@ logging.basicConfig(
 )
 
 
-# ---------------------------------------------------------------------------
-# Wordlist Handling
-# ---------------------------------------------------------------------------
+# ============================================================================
+# CYBERSECURITY THEME
+# ============================================================================
+
+BG_COLOR = "#080B12"
+PANEL_COLOR = "#101620"
+PANEL_DARK = "#0C1119"
+
+RED = "#FF3B3B"
+RED_DARK = "#B51F2A"
+
+GREEN = "#00E676"
+YELLOW = "#FFD740"
+ORANGE = "#FF9100"
+
+CYAN = "#00E5FF"
+WHITE = "#F5F7FA"
+LIGHT_GRAY = "#B8C2CC"
+GRAY = "#687482"
+
+BORDER = "#1E2936"
+
+
+# ============================================================================
+# WORDLIST
+# ============================================================================
 
 class Wordlist:
     """Load and manage password wordlists efficiently."""
@@ -52,7 +81,7 @@ class Wordlist:
         self.words = self.load_wordlist()
 
     def load_wordlist(self):
-        """Load a wordlist and cache it for future use."""
+        """Load a wordlist and cache it."""
 
         if self.file_path in self._cache:
             return self._cache[self.file_path]
@@ -88,12 +117,12 @@ class Wordlist:
         return word.lower() in self.words
 
 
-# ---------------------------------------------------------------------------
-# Strength Result
-# ---------------------------------------------------------------------------
+# ============================================================================
+# STRENGTH RESULT
+# ============================================================================
 
 class StrengthResult:
-    """Store the result of a password strength analysis."""
+    """Store password strength analysis results."""
 
     def __init__(
         self,
@@ -108,18 +137,19 @@ class StrengthResult:
         self.suggestions = suggestions or []
 
 
-# ---------------------------------------------------------------------------
-# Password Strength Analysis
-# ---------------------------------------------------------------------------
+# ============================================================================
+# PASSWORD STRENGTH ENGINE
+# ============================================================================
 
 class PasswordStrength:
-    """Perform password strength analysis and secure generation."""
+    """Analyze password strength and generate secure passwords."""
 
     def __init__(
         self,
         weak_wordlist_path="./weak_passwords.txt",
         banned_wordlist_path="./banned_passwords.txt"
     ):
+
         self.weak_wordlist = (
             Wordlist(weak_wordlist_path)
             if weak_wordlist_path
@@ -142,11 +172,13 @@ class PasswordStrength:
             4: "Very Strong"
         }
 
-        self.special_characters = "!@#$%^&*(),.?\":{}|<>[]_-+=~`'\\/;"
+        self.special_characters = (
+            "!@#$%^&*(),.?\":{}|<>[]_-+=~`'\\/;"
+        )
 
-    # -----------------------------------------------------------------------
-    # Password Strength Checking
-    # -----------------------------------------------------------------------
+    # ------------------------------------------------------------------------
+    # PASSWORD ANALYSIS
+    # ------------------------------------------------------------------------
 
     def check_password_strength(self, password):
         """Evaluate the strength of a password."""
@@ -160,6 +192,7 @@ class PasswordStrength:
 
         # Length check
         if len(password) < self.min_password_length:
+
             return StrengthResult(
                 "Too Short",
                 0,
@@ -180,6 +213,7 @@ class PasswordStrength:
             self.banned_wordlist
             and self.banned_wordlist.is_word_in_list(password)
         ):
+
             return StrengthResult(
                 "Banned",
                 0,
@@ -198,23 +232,28 @@ class PasswordStrength:
             self.weak_wordlist
             and self.weak_wordlist.is_word_in_list(password)
         ):
+
             return StrengthResult(
                 "Weak",
                 0,
                 "This password is commonly used and easily guessable.",
                 [
-                    "Avoid common passwords.",
+                    "Avoid commonly used passwords.",
                     "Use a longer and more unpredictable password."
                 ]
             )
 
-        # zxcvbn analysis
+        # zxcvbn
         password_strength = zxcvbn(password)
 
         score = password_strength["score"]
-        strength = self.strength_mapping.get(score, "Unknown")
 
-        # Complexity analysis
+        strength = self.strength_mapping.get(
+            score,
+            "Unknown"
+        )
+
+        # Complexity checks
         complexity_issues = []
 
         if not re.search(r"[A-Z]", password):
@@ -232,19 +271,27 @@ class PasswordStrength:
         ):
             complexity_issues.append("special characters")
 
-        # zxcvbn suggestions
-        feedback = password_strength.get("feedback", {})
-        zxcvbn_suggestions = feedback.get("suggestions", [])
+        feedback = password_strength.get(
+            "feedback",
+            {}
+        )
+
+        zxcvbn_suggestions = feedback.get(
+            "suggestions",
+            []
+        )
 
         suggestions = list(zxcvbn_suggestions)
 
         if complexity_issues:
+
             complexity_message = (
                 "Password lacks some recommended character types. "
                 f"Missing: {', '.join(complexity_issues)}."
             )
 
             for issue in complexity_issues:
+
                 suggestion = f"Add {issue}."
 
                 if suggestion not in suggestions:
@@ -257,8 +304,8 @@ class PasswordStrength:
                 suggestions
             )
 
-        # Strong password
         if score >= 3:
+
             return StrengthResult(
                 strength,
                 score,
@@ -269,7 +316,6 @@ class PasswordStrength:
                 suggestions
             )
 
-        # Moderate/weak password
         return StrengthResult(
             strength,
             score,
@@ -280,18 +326,19 @@ class PasswordStrength:
             suggestions
         )
 
-    # -----------------------------------------------------------------------
-    # Improvement Suggestions
-    # -----------------------------------------------------------------------
+    # ------------------------------------------------------------------------
+    # IMPROVEMENT SUGGESTIONS
+    # ------------------------------------------------------------------------
 
     def suggest_improvements(self, password):
-        """Generate actionable recommendations for a password."""
+        """Generate actionable password improvement suggestions."""
 
         result = self.check_password_strength(password)
 
         suggestions = []
 
         if len(password) < self.min_password_length:
+
             suggestions.append(
                 f"Increase length to at least "
                 f"{self.min_password_length} characters."
@@ -312,8 +359,8 @@ class PasswordStrength:
         ):
             suggestions.append("Add special characters.")
 
-        # Add zxcvbn suggestions
         for suggestion in result.suggestions:
+
             if suggestion and suggestion not in suggestions:
                 suggestions.append(suggestion)
 
@@ -321,25 +368,22 @@ class PasswordStrength:
             return "No major improvements required."
 
         return (
-            "Suggested improvements:\n\n"
-            + "\n".join(f"- {item}" for item in suggestions)
+            "Suggested improvements:\n"
+            + "\n".join(
+                f"• {item}"
+                for item in suggestions
+            )
         )
 
-    # -----------------------------------------------------------------------
-    # Secure Password Generation
-    # -----------------------------------------------------------------------
+    # ------------------------------------------------------------------------
+    # SECURE PASSWORD GENERATION
+    # ------------------------------------------------------------------------
 
     def generate_random_password(self, length=16):
-        """Generate a cryptographically secure random password.
-
-        The generated password contains at least:
-        - One uppercase letter
-        - One lowercase letter
-        - One number
-        - One special character
-        """
+        """Generate a cryptographically secure random password."""
 
         if length < 12:
+
             raise ValueError(
                 "Generated passwords must be at least 12 characters long."
             )
@@ -349,8 +393,8 @@ class PasswordStrength:
         digits = string.digits
         special = self.special_characters
 
-        # Guarantee required character categories.
         password_characters = [
+
             secrets.choice(uppercase),
             secrets.choice(lowercase),
             secrets.choice(digits),
@@ -364,16 +408,27 @@ class PasswordStrength:
             + special
         )
 
-        # Fill remaining positions.
         for _ in range(length - 4):
+
             password_characters.append(
                 secrets.choice(all_characters)
             )
 
-        # Securely shuffle the generated characters.
-        for index in range(len(password_characters) - 1, 0, -1):
-            random_index = secrets.randbelow(index + 1)
-            password_characters[index], password_characters[random_index] = (
+        # Secure Fisher-Yates shuffle
+        for index in range(
+            len(password_characters) - 1,
+            0,
+            -1
+        ):
+
+            random_index = secrets.randbelow(
+                index + 1
+            )
+
+            (
+                password_characters[index],
+                password_characters[random_index]
+            ) = (
                 password_characters[random_index],
                 password_characters[index]
             )
@@ -381,228 +436,858 @@ class PasswordStrength:
         return "".join(password_characters)
 
 
-# ---------------------------------------------------------------------------
-# GUI
-# ---------------------------------------------------------------------------
+# ============================================================================
+# CYBERSECURITY GUI
+# ============================================================================
 
 class PasswordStrengthGUI:
-    """Graphical user interface for the password analyzer."""
+    """Cybersecurity-themed Tkinter interface."""
 
     def __init__(self, master):
+
         self.master = master
 
-        master.title("Password Strength Analyzer")
-        master.geometry("600x600")
-        master.resizable(False, False)
+        self.master.title(
+            "Password Strength Analyzer"
+        )
+
+        self.master.geometry(
+            "850x720"
+        )
+
+        self.master.configure(
+            bg=BG_COLOR
+        )
+
+        self.master.resizable(
+            False,
+            False
+        )
 
         self.password_strength = PasswordStrength()
 
         self.results = []
 
-        # ---------------------------------------------------------------
-        # Title
-        # ---------------------------------------------------------------
+        self.password_visible = False
 
-        self.title_label = tk.Label(
-            master,
-            text="Password Strength Analyzer",
-            font=("Arial", 18, "bold")
+        self.setup_gui()
+
+    # ------------------------------------------------------------------------
+    # GUI SETUP
+    # ------------------------------------------------------------------------
+
+    def setup_gui(self):
+
+        # ================================================================
+        # HEADER
+        # ================================================================
+
+        header = tk.Frame(
+            self.master,
+            bg=BG_COLOR
         )
-        self.title_label.pack(pady=15)
 
-        # ---------------------------------------------------------------
-        # Password Input
-        # ---------------------------------------------------------------
-
-        self.label = tk.Label(
-            master,
-            text="Enter password:"
+        header.pack(
+            fill="x",
+            padx=30,
+            pady=(25, 10)
         )
-        self.label.pack()
+
+        logo = tk.Label(
+            header,
+            text="🔐",
+            font=("Segoe UI Emoji", 30),
+            bg=BG_COLOR,
+            fg=RED
+        )
+
+        logo.pack(
+            side="left",
+            padx=(0, 12)
+        )
+
+        title_container = tk.Frame(
+            header,
+            bg=BG_COLOR
+        )
+
+        title_container.pack(
+            side="left"
+        )
+
+        title = tk.Label(
+            title_container,
+            text="PASSWORD STRENGTH ANALYZER",
+            font=("Consolas", 20, "bold"),
+            bg=BG_COLOR,
+            fg=WHITE
+        )
+
+        title.pack(
+            anchor="w"
+        )
+
+        subtitle = tk.Label(
+            title_container,
+            text="CYBERSECURITY • PASSWORD INTELLIGENCE",
+            font=("Consolas", 9),
+            bg=BG_COLOR,
+            fg=CYAN
+        )
+
+        subtitle.pack(
+            anchor="w",
+            pady=(3, 0)
+        )
+
+        # ================================================================
+        # TOP STATUS BAR
+        # ================================================================
+
+        status_bar = tk.Frame(
+            self.master,
+            bg=PANEL_DARK,
+            highlightbackground=BORDER,
+            highlightthickness=1
+        )
+
+        status_bar.pack(
+            fill="x",
+            padx=30,
+            pady=(0, 15)
+        )
+
+        status_left = tk.Label(
+            status_bar,
+            text="● SYSTEM READY",
+            font=("Consolas", 9, "bold"),
+            bg=PANEL_DARK,
+            fg=GREEN
+        )
+
+        status_left.pack(
+            side="left",
+            padx=15,
+            pady=8
+        )
+
+        status_right = tk.Label(
+            status_bar,
+            text="LOCAL ANALYSIS • NO EXTERNAL API",
+            font=("Consolas", 9),
+            bg=PANEL_DARK,
+            fg=GRAY
+        )
+
+        status_right.pack(
+            side="right",
+            padx=15
+        )
+
+        # ================================================================
+        # MAIN CONTENT
+        # ================================================================
+
+        main_frame = tk.Frame(
+            self.master,
+            bg=BG_COLOR
+        )
+
+        main_frame.pack(
+            fill="both",
+            expand=True,
+            padx=30
+        )
+
+        # ================================================================
+        # LEFT PANEL
+        # ================================================================
+
+        left_panel = tk.Frame(
+            main_frame,
+            bg=PANEL_COLOR,
+            highlightbackground=BORDER,
+            highlightthickness=1
+        )
+
+        left_panel.pack(
+            side="left",
+            fill="both",
+            expand=True,
+            padx=(0, 10)
+        )
+
+        left_title = tk.Label(
+            left_panel,
+            text="PASSWORD ANALYSIS",
+            font=("Consolas", 12, "bold"),
+            bg=PANEL_COLOR,
+            fg=RED
+        )
+
+        left_title.pack(
+            anchor="w",
+            padx=20,
+            pady=(18, 12)
+        )
+
+        separator = tk.Frame(
+            left_panel,
+            height=1,
+            bg=BORDER
+        )
+
+        separator.pack(
+            fill="x",
+            padx=20
+        )
+
+        input_label = tk.Label(
+            left_panel,
+            text="ENTER PASSWORD",
+            font=("Consolas", 9, "bold"),
+            bg=PANEL_COLOR,
+            fg=LIGHT_GRAY
+        )
+
+        input_label.pack(
+            anchor="w",
+            padx=20,
+            pady=(18, 5)
+        )
+
+        input_frame = tk.Frame(
+            left_panel,
+            bg=PANEL_DARK,
+            highlightbackground=BORDER,
+            highlightthickness=1
+        )
+
+        input_frame.pack(
+            fill="x",
+            padx=20
+        )
 
         self.password_entry = tk.Entry(
-            master,
-            show="*",
-            width=45
+            input_frame,
+            show="•",
+            font=("Consolas", 12),
+            bg=PANEL_DARK,
+            fg=WHITE,
+            insertbackground=CYAN,
+            relief="flat",
+            width=32
         )
-        self.password_entry.pack(pady=5)
+
+        self.password_entry.pack(
+            side="left",
+            padx=10,
+            pady=10,
+            fill="x",
+            expand=True
+        )
+
+        self.visibility_button = tk.Button(
+            input_frame,
+            text="SHOW",
+            command=self.toggle_password_visibility,
+            bg=PANEL_DARK,
+            fg=CYAN,
+            activebackground=PANEL_DARK,
+            activeforeground=WHITE,
+            relief="flat",
+            font=("Consolas", 8, "bold"),
+            cursor="hand2"
+        )
+
+        self.visibility_button.pack(
+            side="right",
+            padx=8
+        )
 
         self.password_entry.bind(
             "<Return>",
             lambda event: self.check_password()
         )
 
-        # ---------------------------------------------------------------
-        # Check Button
-        # ---------------------------------------------------------------
+        # Analyze button
 
         self.check_button = tk.Button(
-            master,
-            text="Check Strength",
-            command=self.check_password
+            left_panel,
+            text="▶  ANALYZE PASSWORD",
+            command=self.check_password,
+            bg=RED_DARK,
+            fg=WHITE,
+            activebackground=RED,
+            activeforeground=WHITE,
+            font=("Consolas", 10, "bold"),
+            relief="flat",
+            cursor="hand2",
+            padx=10,
+            pady=8
         )
-        self.check_button.pack(pady=5)
 
-        # ---------------------------------------------------------------
-        # Result
-        # ---------------------------------------------------------------
+        self.check_button.pack(
+            fill="x",
+            padx=20,
+            pady=12
+        )
 
-        self.result_label = tk.Label(
-            master,
+        # ================================================================
+        # STRENGTH DISPLAY
+        # ================================================================
+
+        strength_title = tk.Label(
+            left_panel,
+            text="SECURITY ASSESSMENT",
+            font=("Consolas", 9, "bold"),
+            bg=PANEL_COLOR,
+            fg=GRAY
+        )
+
+        strength_title.pack(
+            anchor="w",
+            padx=20,
+            pady=(8, 5)
+        )
+
+        self.strength_label = tk.Label(
+            left_panel,
+            text="WAITING FOR INPUT",
+            font=("Consolas", 18, "bold"),
+            bg=PANEL_COLOR,
+            fg=GRAY
+        )
+
+        self.strength_label.pack(
+            pady=5
+        )
+
+        # Strength meter
+
+        meter_frame = tk.Frame(
+            left_panel,
+            bg=PANEL_DARK,
+            height=14
+        )
+
+        meter_frame.pack(
+            fill="x",
+            padx=20,
+            pady=8
+        )
+
+        meter_frame.pack_propagate(False)
+
+        self.meter_fill = tk.Frame(
+            meter_frame,
+            bg=GRAY,
+            width=0
+        )
+
+        self.meter_fill.place(
+            x=0,
+            y=0,
+            relheight=1
+        )
+
+        self.score_label = tk.Label(
+            left_panel,
+            text="SCORE: -- / 4",
+            font=("Consolas", 9, "bold"),
+            bg=PANEL_COLOR,
+            fg=LIGHT_GRAY
+        )
+
+        self.score_label.pack(
+            pady=(0, 10)
+        )
+
+        # Result box
+
+        self.result_text = tk.Label(
+            left_panel,
+            text="Enter a password to begin analysis.",
+            font=("Consolas", 9),
+            bg=PANEL_DARK,
+            fg=LIGHT_GRAY,
+            wraplength=340,
+            justify="left",
+            padx=12,
+            pady=12
+        )
+
+        self.result_text.pack(
+            fill="x",
+            padx=20,
+            pady=5
+        )
+
+        # Suggestions
+
+        self.suggestion_text = tk.Label(
+            left_panel,
             text="",
-            wraplength=550,
+            font=("Consolas", 8),
+            bg=PANEL_COLOR,
+            fg=LIGHT_GRAY,
+            wraplength=340,
             justify="left"
         )
-        self.result_label.pack(pady=5)
 
-        self.suggestion_label = tk.Label(
-            master,
-            text="",
-            wraplength=550,
+        self.suggestion_text.pack(
+            anchor="w",
+            padx=20,
+            pady=(8, 15)
+        )
+
+        # ================================================================
+        # RIGHT PANEL
+        # ================================================================
+
+        right_panel = tk.Frame(
+            main_frame,
+            bg=PANEL_COLOR,
+            highlightbackground=BORDER,
+            highlightthickness=1
+        )
+
+        right_panel.pack(
+            side="right",
+            fill="both",
+            expand=True,
+            padx=(10, 0)
+        )
+
+        generator_title = tk.Label(
+            right_panel,
+            text="SECURE GENERATOR",
+            font=("Consolas", 12, "bold"),
+            bg=PANEL_COLOR,
+            fg=CYAN
+        )
+
+        generator_title.pack(
+            anchor="w",
+            padx=20,
+            pady=(18, 12)
+        )
+
+        generator_separator = tk.Frame(
+            right_panel,
+            height=1,
+            bg=BORDER
+        )
+
+        generator_separator.pack(
+            fill="x",
+            padx=20
+        )
+
+        generator_description = tk.Label(
+            right_panel,
+            text=(
+                "Generate a cryptographically secure password "
+                "using Python's secrets module."
+            ),
+            font=("Consolas", 9),
+            bg=PANEL_COLOR,
+            fg=LIGHT_GRAY,
+            wraplength=340,
             justify="left"
         )
-        self.suggestion_label.pack(pady=5)
 
-        # ---------------------------------------------------------------
-        # Generate Password
-        # ---------------------------------------------------------------
+        generator_description.pack(
+            anchor="w",
+            padx=20,
+            pady=(18, 15)
+        )
 
         self.generate_button = tk.Button(
-            master,
-            text="Generate Strong Password",
-            command=self.generate_password
+            right_panel,
+            text="⚡  GENERATE SECURE PASSWORD",
+            command=self.generate_password,
+            bg="#12303A",
+            fg=CYAN,
+            activebackground="#174653",
+            activeforeground=WHITE,
+            font=("Consolas", 10, "bold"),
+            relief="flat",
+            cursor="hand2",
+            padx=10,
+            pady=10
         )
-        self.generate_button.pack(pady=5)
 
-        # ---------------------------------------------------------------
-        # Generated Password Display
-        # ---------------------------------------------------------------
+        self.generate_button.pack(
+            fill="x",
+            padx=20,
+            pady=5
+        )
+
+        generated_label = tk.Label(
+            right_panel,
+            text="GENERATED PASSWORD",
+            font=("Consolas", 9, "bold"),
+            bg=PANEL_COLOR,
+            fg=GRAY
+        )
+
+        generated_label.pack(
+            anchor="w",
+            padx=20,
+            pady=(20, 5)
+        )
 
         self.password_display = tk.Text(
-            master,
-            height=2,
-            width=50,
-            wrap=tk.WORD
+            right_panel,
+            height=3,
+            width=35,
+            wrap=tk.WORD,
+            font=("Consolas", 11, "bold"),
+            bg=PANEL_DARK,
+            fg=GREEN,
+            insertbackground=GREEN,
+            relief="flat",
+            padx=10,
+            pady=10
         )
-        self.password_display.pack(pady=5)
+
+        self.password_display.pack(
+            fill="x",
+            padx=20
+        )
 
         self.copy_button = tk.Button(
-            master,
-            text="Copy to Clipboard",
-            command=self.copy_password
+            right_panel,
+            text="▣  COPY TO CLIPBOARD",
+            command=self.copy_password,
+            bg=PANEL_DARK,
+            fg=WHITE,
+            activebackground="#1A2532",
+            activeforeground=CYAN,
+            font=("Consolas", 9, "bold"),
+            relief="flat",
+            cursor="hand2"
         )
-        self.copy_button.pack(pady=5)
 
-        # ---------------------------------------------------------------
-        # Export
-        # ---------------------------------------------------------------
+        self.copy_button.pack(
+            fill="x",
+            padx=20,
+            pady=8
+        )
+
+        # ================================================================
+        # SECURITY TIPS
+        # ================================================================
+
+        tips_title = tk.Label(
+            right_panel,
+            text="SECURITY PROTOCOLS",
+            font=("Consolas", 10, "bold"),
+            bg=PANEL_COLOR,
+            fg=YELLOW
+        )
+
+        tips_title.pack(
+            anchor="w",
+            padx=20,
+            pady=(20, 8)
+        )
+
+        tips = (
+            "01  Use long, unique passwords\n"
+            "02  Avoid personal information\n"
+            "03  Avoid common words and patterns\n"
+            "04  Never reuse important passwords\n"
+            "05  Consider using a password manager\n"
+            "06  Never share your passwords"
+        )
+
+        tips_label = tk.Label(
+            right_panel,
+            text=tips,
+            font=("Consolas", 8),
+            bg=PANEL_DARK,
+            fg=LIGHT_GRAY,
+            justify="left",
+            anchor="w",
+            padx=12,
+            pady=12
+        )
+
+        tips_label.pack(
+            fill="x",
+            padx=20
+        )
+
+        # ================================================================
+        # EXPORT BUTTON
+        # ================================================================
 
         self.export_button = tk.Button(
-            master,
-            text="Export Results",
-            command=self.export_results
+            right_panel,
+            text="⇩  EXPORT ANALYSIS RESULTS",
+            command=self.export_results,
+            bg=PANEL_DARK,
+            fg=WHITE,
+            activebackground="#1A2532",
+            activeforeground=CYAN,
+            font=("Consolas", 9, "bold"),
+            relief="flat",
+            cursor="hand2"
         )
-        self.export_button.pack(pady=5)
 
-        # ---------------------------------------------------------------
-        # Security Tips
-        # ---------------------------------------------------------------
-
-        self.tip_label = tk.Label(
-            master,
-            text=(
-                "\nSecurity Tips:\n\n"
-                "• Avoid personal information in passwords\n"
-                "• Use long and unique passwords\n"
-                "• Combine different character types\n"
-                "• Avoid common words and predictable patterns\n"
-                "• Use a different password for every account\n"
-                "• Consider using a reputable password manager"
-            ),
-            justify="left",
-            fg="light blue"
+        self.export_button.pack(
+            fill="x",
+            padx=20,
+            pady=(15, 5)
         )
-        self.tip_label.pack(pady=5)
 
-        # ---------------------------------------------------------------
-        # Quit
-        # ---------------------------------------------------------------
+        # ================================================================
+        # QUIT
+        # ================================================================
 
         self.quit_button = tk.Button(
-            master,
-            text="Quit",
-            command=master.quit
+            right_panel,
+            text="EXIT APPLICATION",
+            command=self.master.quit,
+            bg=PANEL_DARK,
+            fg=RED,
+            activebackground="#1A1015",
+            activeforeground=RED,
+            font=("Consolas", 8, "bold"),
+            relief="flat",
+            cursor="hand2"
         )
-        self.quit_button.pack(pady=10)
 
-    # -------------------------------------------------------------------
-    # Check Password
-    # -------------------------------------------------------------------
+        self.quit_button.pack(
+            fill="x",
+            padx=20,
+            pady=5
+        )
+
+        # ================================================================
+        # FOOTER
+        # ================================================================
+
+        footer = tk.Frame(
+            self.master,
+            bg=BG_COLOR
+        )
+
+        footer.pack(
+            fill="x",
+            padx=30,
+            pady=(10, 15)
+        )
+
+        footer_left = tk.Label(
+            footer,
+            text="PASSWORD SECURITY TOOL",
+            font=("Consolas", 8),
+            bg=BG_COLOR,
+            fg=GRAY
+        )
+
+        footer_left.pack(
+            side="left"
+        )
+
+        footer_right = tk.Label(
+            footer,
+            text="LOCAL PROCESSING • NO PLAINTEXT STORAGE",
+            font=("Consolas", 8),
+            bg=BG_COLOR,
+            fg=GRAY
+        )
+
+        footer_right.pack(
+            side="right"
+        )
+
+    # ------------------------------------------------------------------------
+    # PASSWORD VISIBILITY
+    # ------------------------------------------------------------------------
+
+    def toggle_password_visibility(self):
+        """Toggle password visibility."""
+
+        self.password_visible = not self.password_visible
+
+        if self.password_visible:
+
+            self.password_entry.config(
+                show=""
+            )
+
+            self.visibility_button.config(
+                text="HIDE"
+            )
+
+        else:
+
+            self.password_entry.config(
+                show="•"
+            )
+
+            self.visibility_button.config(
+                text="SHOW"
+            )
+
+    # ------------------------------------------------------------------------
+    # STRENGTH METER
+    # ------------------------------------------------------------------------
+
+    def update_strength_meter(
+        self,
+        score,
+        strength
+    ):
+        """Update the visual password strength meter."""
+
+        colors = {
+            "Very Weak": RED,
+            "Weak": RED,
+            "Moderate": ORANGE,
+            "Strong": GREEN,
+            "Very Strong": CYAN,
+            "Too Short": RED,
+            "Banned": RED,
+            "Invalid": GRAY
+        }
+
+        color = colors.get(
+            strength,
+            GRAY
+        )
+
+        # Score-based width
+        if score <= 0:
+            width = 0
+        elif score == 1:
+            width = 25
+        elif score == 2:
+            width = 50
+        elif score == 3:
+            width = 75
+        else:
+            width = 100
+
+        self.meter_fill.config(
+            bg=color
+        )
+
+        self.meter_fill.place(
+            relwidth=width / 100,
+            relheight=1,
+            x=0,
+            y=0
+        )
+
+        self.strength_label.config(
+            text=strength.upper(),
+            fg=color
+        )
+
+        self.score_label.config(
+            text=f"SCORE: {score} / 4",
+            fg=color
+        )
+
+    # ------------------------------------------------------------------------
+    # CHECK PASSWORD
+    # ------------------------------------------------------------------------
 
     def check_password(self):
-        """Analyse the password entered by the user."""
+        """Analyse the entered password."""
 
         password = self.password_entry.get()
 
         if not password:
+
             messagebox.showwarning(
                 "Input Required",
                 "Please enter a password to analyse."
             )
+
             return
 
-        result = self.password_strength.check_password_strength(password)
-
-        self.result_label.config(
-            text=(
-                f"Strength: {result.strength}\n"
-                f"Score: {result.score}/4\n"
-                f"Message: {result.message}"
+        result = (
+            self.password_strength.check_password_strength(
+                password
             )
         )
 
-        suggestions = self.password_strength.suggest_improvements(
-            password
+        self.update_strength_meter(
+            result.score,
+            result.strength
         )
 
-        self.suggestion_label.config(
+        self.result_text.config(
+            text=(
+                f"STATUS: {result.strength}\n\n"
+                f"{result.message}"
+            )
+        )
+
+        suggestions = (
+            self.password_strength.suggest_improvements(
+                password
+            )
+        )
+
+        self.suggestion_text.config(
             text=suggestions
         )
 
-        # IMPORTANT:
-        # Do not store or export the plaintext password.
-        self.results.append({
-            "strength": result.strength,
-            "score": result.score,
-            "message": result.message,
-            "password_length": len(password)
-        })
+        # Never store plaintext passwords.
+        self.results.append(
+            {
+                "strength": result.strength,
+                "score": result.score,
+                "message": result.message,
+                "password_length": len(password)
+            }
+        )
 
-        # Never log the password itself.
+        # Never log passwords.
         logging.info(
             "Password checked: %s",
             result.strength
         )
 
-    # -------------------------------------------------------------------
-    # Generate Password
-    # -------------------------------------------------------------------
+    # ------------------------------------------------------------------------
+    # GENERATE PASSWORD
+    # ------------------------------------------------------------------------
 
     def generate_password(self):
-        """Generate a cryptographically secure password."""
+        """Generate a secure password."""
 
         try:
-            password = self.password_strength.generate_random_password()
+
+            password = (
+                self.password_strength
+                .generate_random_password()
+            )
 
         except ValueError as error:
+
             messagebox.showerror(
                 "Generation Error",
                 str(error)
             )
+
             return
 
-        self.password_entry.delete(0, tk.END)
-        self.password_entry.insert(0, password)
+        self.password_entry.delete(
+            0,
+            tk.END
+        )
+
+        self.password_entry.insert(
+            0,
+            password
+        )
 
         self.password_display.delete(
             "1.0",
@@ -614,74 +1299,114 @@ class PasswordStrengthGUI:
             password
         )
 
-        messagebox.showinfo(
-            "Password Generated",
-            "A secure password has been generated.\n\n"
-            "Use the 'Copy to Clipboard' button to copy it."
+        logging.info(
+            "Secure password generated."
         )
 
-        logging.info("Secure password generated.")
+        # Analyze generated password
+        result = (
+            self.password_strength
+            .check_password_strength(password)
+        )
 
-    # -------------------------------------------------------------------
-    # Copy Password
-    # -------------------------------------------------------------------
+        self.update_strength_meter(
+            result.score,
+            result.strength
+        )
+
+        self.result_text.config(
+            text=(
+                f"GENERATED PASSWORD STATUS\n\n"
+                f"{result.strength}\n"
+                f"Score: {result.score}/4\n\n"
+                f"{result.message}"
+            )
+        )
+
+        self.suggestion_text.config(
+            text=(
+                "Generated using cryptographically secure "
+                "randomness."
+            )
+        )
+
+    # ------------------------------------------------------------------------
+    # COPY PASSWORD
+    # ------------------------------------------------------------------------
 
     def copy_password(self):
-        """Copy the generated password to the clipboard."""
+        """Copy generated password to clipboard."""
 
-        password = self.password_display.get(
-            "1.0",
-            tk.END
-        ).strip()
+        password = (
+            self.password_display
+            .get(
+                "1.0",
+                tk.END
+            )
+            .strip()
+        )
 
         if not password:
+
             messagebox.showwarning(
                 "Nothing to Copy",
                 "Generate a password first."
             )
+
             return
 
         self.master.clipboard_clear()
-        self.master.clipboard_append(password)
+
+        self.master.clipboard_append(
+            password
+        )
 
         messagebox.showinfo(
             "Clipboard",
             "Password copied to clipboard."
         )
 
-        logging.info("Generated password copied to clipboard.")
+        logging.info(
+            "Generated password copied to clipboard."
+        )
 
-    # -------------------------------------------------------------------
-    # Export Results
-    # -------------------------------------------------------------------
+    # ------------------------------------------------------------------------
+    # EXPORT
+    # ------------------------------------------------------------------------
 
     def export_results(self):
-        """Export password analysis results without plaintext passwords."""
+        """Export analysis results without plaintext passwords."""
 
         if not self.results:
+
             messagebox.showerror(
-                "Error",
-                "No password analysis results available."
+                "No Results",
+                "No password analysis results are available."
             )
+
             return
 
-        file_path = filedialog.asksaveasfilename(
-            defaultextension=".json",
-            filetypes=[
-                ("JSON files", "*.json"),
-                ("All files", "*.*")
-            ]
+        file_path = (
+            filedialog.asksaveasfilename(
+                defaultextension=".json",
+                filetypes=[
+                    ("JSON files", "*.json"),
+                    ("All files", "*.*")
+                ]
+            )
         )
 
         if not file_path:
             return
 
         try:
+
             with open(
                 file_path,
                 "w",
                 encoding="utf-8"
             ) as file:
+
                 json.dump(
                     self.results,
                     file,
@@ -689,11 +1414,11 @@ class PasswordStrengthGUI:
                 )
 
             messagebox.showinfo(
-                "Export Successful",
+                "Export Complete",
                 (
-                    "Analysis results were exported successfully.\n\n"
-                    "For security reasons, plaintext passwords "
-                    "were not included."
+                    "Analysis results exported successfully.\n\n"
+                    "Plaintext passwords were intentionally "
+                    "excluded for security."
                 )
             )
 
@@ -702,72 +1427,98 @@ class PasswordStrengthGUI:
             )
 
         except OSError as error:
+
             messagebox.showerror(
                 "Export Error",
                 f"Unable to export results:\n{error}"
             )
 
 
-# ---------------------------------------------------------------------------
+# ============================================================================
 # CLI
-# ---------------------------------------------------------------------------
+# ============================================================================
 
 class PasswordStrengthCLI:
-    """Command-line interface for the password analyzer."""
+    """Command-line interface."""
 
     def __init__(self):
-        self.password_strength = PasswordStrength()
 
-    def check_password(self, password):
-        """Analyse and display password strength."""
-
-        result = self.password_strength.check_password_strength(
-            password
+        self.password_strength = (
+            PasswordStrength()
         )
 
-        print("\n" + "=" * 50)
+    def check_password(self, password):
+        """Analyse a password from the CLI."""
+
+        result = (
+            self.password_strength
+            .check_password_strength(password)
+        )
+
+        print("\n" + "=" * 55)
         print("PASSWORD STRENGTH ANALYSIS")
-        print("=" * 50)
+        print("=" * 55)
 
-        print(f"Strength : {result.strength}")
-        print(f"Score    : {result.score}/4")
-        print(f"Message  : {result.message}")
+        print(
+            f"Strength : {result.strength}"
+        )
 
-        print("\n" + self.password_strength.suggest_improvements(
-            password
-        ))
+        print(
+            f"Score    : {result.score}/4"
+        )
 
-        print("=" * 50)
+        print(
+            f"Message  : {result.message}"
+        )
+
+        print(
+            "\n"
+            + self.password_strength
+            .suggest_improvements(password)
+        )
+
+        print("=" * 55)
 
     def generate_password(self, length=16):
-        """Generate and display a secure password."""
+        """Generate a secure password from the CLI."""
 
         try:
+
             password = (
-                self.password_strength.generate_random_password(
+                self.password_strength
+                .generate_random_password(
                     length
                 )
             )
 
         except ValueError as error:
-            print(f"\nError: {error}")
+
+            print(
+                f"\nError: {error}"
+            )
+
             return None
 
-        print("\n" + "=" * 50)
+        print("\n" + "=" * 55)
         print("SECURE PASSWORD GENERATED")
-        print("=" * 50)
+        print("=" * 55)
 
-        print(f"Password: {password}")
-        print(f"Length  : {len(password)}")
+        print(
+            f"Password: {password}"
+        )
 
-        print("=" * 50)
+        print(
+            f"Length  : {len(password)}"
+        )
+
+        print("=" * 55)
 
         return password
 
 
-# ---------------------------------------------------------------------------
-# Main Application
-# ---------------------------------------------------------------------------
+# ============================================================================
+# MAIN
+# ============================================================================
 
 def main():
     """Application entry point."""
@@ -802,42 +1553,49 @@ def main():
         type=int,
         default=16,
         help=(
-            "Specify the generated password length. "
+            "Specify generated password length. "
             "Minimum: 12. Default: 16."
         )
     )
 
     args = parser.parse_args()
 
-    # ---------------------------------------------------------------
-    # CLI Mode
-    # ---------------------------------------------------------------
+    # ========================================================================
+    # CLI MODE
+    # ========================================================================
 
-    if args.cli or args.check or args.generate:
+    if (
+        args.cli
+        or args.check is not None
+        or args.generate
+    ):
 
         cli = PasswordStrengthCLI()
 
-        # Direct password check
         if args.check is not None:
-            cli.check_password(args.check)
 
-        # Direct password generation
+            cli.check_password(
+                args.check
+            )
+
         elif args.generate:
-            cli.generate_password(args.length)
 
-        # Interactive CLI
+            cli.generate_password(
+                args.length
+            )
+
         elif args.cli:
 
             while True:
 
                 print("\n")
-                print("=" * 50)
-                print("PASSWORD STRENGTH ANALYZER")
-                print("=" * 50)
+                print("=" * 55)
+                print("        PASSWORD STRENGTH ANALYZER")
+                print("=" * 55)
                 print("1. Check Password Strength")
                 print("2. Generate Secure Password")
                 print("3. Exit")
-                print("=" * 50)
+                print("=" * 55)
 
                 choice = input(
                     "\nEnter your choice (1-3): "
@@ -849,7 +1607,9 @@ def main():
                         "Enter password to analyse: "
                     )
 
-                    cli.check_password(password)
+                    cli.check_password(
+                        password
+                    )
 
                 elif choice == "2":
 
@@ -866,7 +1626,9 @@ def main():
                             else 16
                         )
 
-                        cli.generate_password(length)
+                        cli.generate_password(
+                            length
+                        )
 
                     except ValueError:
 
@@ -875,36 +1637,43 @@ def main():
                             "Using default length of 16."
                         )
 
-                        cli.generate_password(16)
+                        cli.generate_password(
+                            16
+                        )
 
                 elif choice == "3":
 
-                    print("\nGoodbye!")
+                    print(
+                        "\nGoodbye!"
+                    )
+
                     sys.exit(0)
 
                 else:
 
                     print(
                         "\nInvalid choice. "
-                        "Please select an option from 1-3."
+                        "Please select 1, 2, or 3."
                     )
 
-    # ---------------------------------------------------------------
-    # GUI Mode
-    # ---------------------------------------------------------------
+    # ========================================================================
+    # GUI MODE
+    # ========================================================================
 
     else:
 
         root = tk.Tk()
 
-        PasswordStrengthGUI(root)
+        PasswordStrengthGUI(
+            root
+        )
 
         root.mainloop()
 
 
-# ---------------------------------------------------------------------------
-# Program Entry Point
-# ---------------------------------------------------------------------------
+# ============================================================================
+# ENTRY POINT
+# ============================================================================
 
 if __name__ == "__main__":
     main()
